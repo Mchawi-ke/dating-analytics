@@ -119,3 +119,29 @@ spans_multiple_male = (df.groupby('male_id')['event_id'].nunique() > 1).sum()
 spans_multiple_female = (df.groupby('female_id')['event_id'].nunique() > 1).sum()
 print(f"Men appearing in >1 event: {spans_multiple_male}  |  Women appearing in >1 event: {spans_multiple_female}")
 
+
+
+
+# Data quality observations
+
+#     No missing values, no duplicate rows. This is unusually clean for speed-dating data — the well-known real-world speed-dating studies this kind of dataset is modeled after are notoriously messy (missing surveys, inconsistent scales, dropped waves). That's worth remembering when we get to the Limitations section: results here will look cleaner than a messier real-world version would.
+#     Every person appears in exactly one event. This matters enormously for how we split data for modeling (Section 4) — if we split rows randomly, the same person could appear in both the training and validation sets under a different partner, letting the model partially "memorize" that person rather than learn generalizable patterns. Because people never cross events, splitting by event_id is equivalent to splitting by person — a clean, leak-free grouping variable.
+#     120 events, ~120 dates each on average, 1,274 unique men and 1,274 unique women. A balanced, fully-crossed design (every attendee of a given gender rotates through every attendee of the other gender at their event).
+#     Two columns are pre-registered as leakage by the data dictionary itself: male_decision and female_decision. We'll prove exactly why in Section 3, and treat that as a first-class modeling decision rather than a footnote.
+
+
+# 2. Exploratory Data Analysis
+
+match_rate = df['match'].mean()
+
+fig, ax = plt.subplots(figsize=(6, 5))
+counts = df['match'].value_counts().sort_index()
+bars = ax.bar(['No match', 'Match'], counts.values, color=[PALETTE[3], PALETTE[2]], width=0.55)
+for b, v in zip(bars, counts.values):
+    ax.text(b.get_x() + b.get_width()/2, v + 100, f"{v:,}\n({v/len(df):.1%})",
+            ha='center', va='bottom', fontsize=11)
+ax.set_title(f"Match Rate is Only {match_rate:.1%} — a Meaningfully Imbalanced Target")
+ax.set_ylabel("Number of dates")
+ax.set_ylim(0, counts.max()*1.2)
+plt.tight_layout()
+plt.show()
