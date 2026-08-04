@@ -107,5 +107,15 @@ print(summary)
 
 
 
+print(f"Duplicate rows: {df.duplicated().sum()}")
+print(f"Unique events: {df['event_id'].nunique()}")
+print(f"Unique men: {df['male_id'].nunique()}   Unique women: {df['female_id'].nunique()}")
+print(f"Dates per event -> min: {df.groupby('event_id').size().min()}, "
+      f"median: {int(df.groupby('event_id').size().median())}, "
+      f"max: {df.groupby('event_id').size().max()}")
 
+# Does any man/woman appear across more than one event?
+spans_multiple_male = (df.groupby('male_id')['event_id'].nunique() > 1).sum()
+spans_multiple_female = (df.groupby('female_id')['event_id'].nunique() > 1).sum()
+print(f"Men appearing in >1 event: {spans_multiple_male}  |  Women appearing in >1 event: {spans_multiple_female}")
 
