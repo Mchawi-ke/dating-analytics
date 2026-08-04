@@ -145,3 +145,22 @@ ax.set_ylabel("Number of dates")
 ax.set_ylim(0, counts.max()*1.2)
 plt.tight_layout()
 plt.show()
+
+
+
+# Takeaway: Only 19.6% of speed dates end in a mutual match. This isn't extreme imbalance, but it's enough that plain accuracy would be a misleading metric — a model that always predicts "no match" is already 80% "accurate" while being completely useless. We'll standardize on ROC-AUC, average precision (PR-AUC), and Brier score (calibration) throughout this notebook instead.
+
+
+traits = ['attr', 'sinc', 'intel', 'fun', 'amb']
+fig, axes = plt.subplots(1, 5, figsize=(18, 3.6), sharey=True)
+for ax, t in zip(axes, traits):
+    sns.kdeplot(df[f'{t}_of_female'], ax=ax, label='Rated (women)', fill=True, alpha=0.35, color=PALETTE[0])
+    sns.kdeplot(df[f'{t}_of_male'], ax=ax, label='Rated (men)', fill=True, alpha=0.35, color=PALETTE[1])
+    ax.set_title(t.capitalize())
+    ax.set_xlabel('Rating (0-10)')
+    ax.set_xlim(0, 10)
+axes[0].set_ylabel('Density')
+axes[-1].legend(loc='upper left', fontsize=9)
+fig.suptitle("How Men Rate Women vs. How Women Rate Men, Across All Five Traits", y=1.05, fontweight='bold')
+plt.tight_layout()
+plt.show()
