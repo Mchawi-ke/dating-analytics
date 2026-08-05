@@ -696,3 +696,101 @@ comparison = pd.DataFrame({
 }).set_index('approach')
 comparison.round(4)
 
+
+
+# Takeaway — this is the most practically interesting result in the notebook: the two-stage approach matches the direct model on ranking quality (ROC-AUC / PR-AUC are within noise of each other), but is dramatically better calibrated (Brier score roughly 0.145 vs. 0.215, i.e. predicted probabilities are much closer to observed frequencies). This makes sense mechanically: multiplying two independently-calibrated probabilities automatically respects the rare-event structure of the joint target, whereas the class-balanced direct classifier has to be explicitly re-calibrated to avoid overconfident probabilities on the minority class.
+
+# Practical implication: if you only care about ranking candidates, either approach works. If you need genuinely trustworthy probabilities — e.g. to say "this pair has a 12% chance of matching" — the two-stage decomposition is the better-engineered choice, and it maps naturally onto how such a system would actually be used in production (estimating each side's interest before any date happens).
+
+# Caveat, stated plainly: multiplying p_male_yes * p_female_yes assumes the two decisions are conditionally independent given the observed features. That's a reasonable simplification — the decisions are made privately and simultaneously — but it would break down if there were unobserved factors that influence both people at once (e.g., date-level "chemistry" or a bad venue for that particular round) that aren't captured in any feature we have.
+
+
+
+
+# 11. Error Analysis
+
+# Aggregate metrics can hide systematic mistakes. We look at two things: concrete examples the held-out XGBoost model (Section 7) got most confidently wrong, and whether calibration differs across subgroups (same_race, same_field) — a lightweight fairness-style check.
+
+
+val_df = df.loc[val_mask].copy()
+val_df['predicted_proba'] = val_proba
+val_df['actual_match'] = y_val
+
+display_cols = ['predicted_proba', 'actual_match', 'attr_of_female', 'attr_of_male',
+                 'shared_interests', 'age_gap', 'same_race', 'same_field']
+
+print("Most confident FALSE POSITIVES (model expected a match; it didn't happen):")
+false_pos = val_df[val_df['actual_match'] == 0].sort_values('predicted_proba', ascending=False)
+display(false_pos[display_cols].head(5))
+
+print("\nMost confident FALSE NEGATIVES (model expected no match; it happened anyway):")
+false_neg = val_df[val_df['actual_match'] == 1].sort_values('predicted_proba', ascending=True)
+display(false_neg[display_cols].head(5))
+
+
+
+
+
+# Takeaway: The biggest false positives are dates where every observable signal looked strong (high mutual attractiveness, high shared interests, small age gap) and yet one side still said no — a reminder that plenty of what drives a real decision is simply not captured by these columns (tone of voice, a single off-hand comment, unmeasured chemistry). The false negatives are the mirror image: modest scores across the board that still resulted in a mutual yes. Both patterns point to the same honest limitation: this feature set explains a meaningful share of match likelihood, not all of it — exactly what an ROC-AUC of ~0.70 (well above chance, well below deterministic) should lead us to expect.
+
+
+fig, axes = plt.subplots(1, 2, figsize=(13, 5))
+
+for ax, subgroup_col, title in zip(axes, ['same_race', 'same_field'],
+                                     ['Calibration by Same-Race Status', 'Calibration by Same-Field Status']):
+    for val, label, color in [(0, 'Different', PALETTE[0]), (1, 'Same', PALETTE[1])]:
+        mask = val_df[subgroup_col] == val
+        if mask.sum() < 30:
+            continue
+        frac_pos, mean_pred = calibration_curve(val_df.loc[mask, 'actual_match'],
+                                                  val_df.loc[mask, 'predicted_proba'], n_bins=5, strategy='quantile')
+        ax.plot(mean_pred, frac_pos, marker='o', label=f"{label} (n={mask.sum()})", color=color)
+    ax.plot([0, 1], [0, 1], ls='--', color='gray')
+    ax.set_title(title)
+    ax.set_xlabel("Mean predicted probability")
+    ax.set_ylabel("Observed match rate")
+    ax.legend(fontsize=9)
+
+plt.tight_layout()
+plt.show()
+
+
+
+
+# 12. What Surprised Us in This Dataset?
+
+#     match is a tautology of two other columns, not an outcome to be predicted from them. Easy to miss, easy to exploit for an artificially perfect-looking notebook (Section 3).
+#     Demographic homophily barely matters here. same_race and same_field correlate with match at r ≈ 0.006–0.003 — essentially zero — despite homophily being a famous, well-replicated finding in broader relationship-science literature. In this dataset, attraction and shared interests completely dominate any demographic-similarity effect.
+#     Stated preferences are directionally real but much weaker than advertised. People who say looks matter more to them do show a stronger looks→decision link — but the size of that shift (≈0.1–0.14 correlation points) is small next to the roughly 2x spread in how strongly people rate the importance of looks on the survey (Section 2).
+#     Individual self-perception is far more miscalibrated than the population average suggests. ~37% meaningfully overestimate their own attractiveness, ~37% meaningfully underestimate it, and the two groups' errors cancel out almost perfectly at the population level (Section 2).
+#     A simple logistic regression is competitive with XGBoost, before and after tuning. The relationship between these features and match probability is mostly linear and additive; tuning moved ROC-AUC by about one-hundredth of a point (Sections 6, 8).
+#     Reframing the problem — decisions first, match second — improves calibration for free. The two-stage decomposition matches the direct model's ranking quality but cuts the Brier score by roughly a third, and maps naturally onto how a real recommender would actually be used (Section 10).
+
+
+
+
+
+# 13. Key Findings & Conclusion
+# Best model summary
+
+
+# final_summary = pd.DataFrame({
+#     'Metric': ['ROC-AUC (5-fold grouped CV)', 'PR-AUC (5-fold grouped CV)', 'Brier score (grouped OOF)'],
+#     'Direct match model (LogReg)': [
+#         f"{results_df.loc['Logistic Regression', 'roc_auc_mean']:.3f}",
+#         f"{results_df.loc['Logistic Regression', 'pr_auc_mean']:.3f}",
+#         f"{brier_score_loss(y, p_match_direct):.3f}"
+#     ],
+#     'Direct match model (XGBoost, tuned)': [
+#         f"{search.best_score_:.3f}",
+#         f"{results_df.loc['XGBoost', 'pr_auc_mean']:.3f}",
+#         f"{results_df.loc['XGBoost', 'brier_mean']:.3f}"
+#     ],
+#     'Two-stage decision model': [
+#         f"{roc_auc_score(y, p_match_two_stage):.3f}",
+#         f"{average_precision_score(y, p_match_two_stage):.3f}",
+#         f"{brier_score_loss(y, p_match_two_stage):.3f}"
+#     ],
+# }).set_index('Metric')
+# final_summary
+
