@@ -712,20 +712,20 @@ comparison.round(4)
 # Aggregate metrics can hide systematic mistakes. We look at two things: concrete examples the held-out XGBoost model (Section 7) got most confidently wrong, and whether calibration differs across subgroups (same_race, same_field) — a lightweight fairness-style check.
 
 
-val_df = df.loc[val_mask].copy()
-val_df['predicted_proba'] = val_proba
-val_df['actual_match'] = y_val
+# val_df = df.loc[val_mask].copy()
+# val_df['predicted_proba'] = val_proba
+# val_df['actual_match'] = y_val
 
-display_cols = ['predicted_proba', 'actual_match', 'attr_of_female', 'attr_of_male',
-                 'shared_interests', 'age_gap', 'same_race', 'same_field']
+# display_cols = ['predicted_proba', 'actual_match', 'attr_of_female', 'attr_of_male',
+#                  'shared_interests', 'age_gap', 'same_race', 'same_field']
 
-print("Most confident FALSE POSITIVES (model expected a match; it didn't happen):")
-false_pos = val_df[val_df['actual_match'] == 0].sort_values('predicted_proba', ascending=False)
-display(false_pos[display_cols].head(5))
+# print("Most confident FALSE POSITIVES (model expected a match; it didn't happen):")
+# false_pos = val_df[val_df['actual_match'] == 0].sort_values('predicted_proba', ascending=False)
+# display(false_pos[display_cols].head(5))
 
-print("\nMost confident FALSE NEGATIVES (model expected no match; it happened anyway):")
-false_neg = val_df[val_df['actual_match'] == 1].sort_values('predicted_proba', ascending=True)
-display(false_neg[display_cols].head(5))
+# print("\nMost confident FALSE NEGATIVES (model expected no match; it happened anyway):")
+# false_neg = val_df[val_df['actual_match'] == 1].sort_values('predicted_proba', ascending=True)
+# display(false_neg[display_cols].head(5))
 
 
 
