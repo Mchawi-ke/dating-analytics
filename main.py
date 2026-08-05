@@ -678,3 +678,21 @@ p_match_two_stage = p_male_yes * p_female_yes
 print(f"Two-stage match probability (product of the two): ROC-AUC = {roc_auc_score(df['match'], p_match_two_stage):.3f}")
 
 
+# Fair, apples-to-apples comparison: the SAME out-of-fold protocol applied to the
+# direct single-stage match model from Section 6 (logistic regression, for a like-for-like comparison).
+direct_pipe = Pipeline([('pre', preprocessor),
+                         ('clf', LogisticRegression(max_iter=2000, class_weight='balanced', random_state=RANDOM_STATE))])
+p_match_direct = np.zeros(len(y))
+for train_idx, val_idx in gkf.split(X_eng, y, groups):
+    direct_pipe.fit(X_eng.iloc[train_idx], y[train_idx])
+    p_match_direct[val_idx] = direct_pipe.predict_proba(X_eng.iloc[val_idx])[:, 1]
+
+comparison = pd.DataFrame({
+    'approach': ['Direct single-stage model (Sec. 6 features -> match)',
+                 'Two-stage model (decision x decision -> match)'],
+    'roc_auc': [roc_auc_score(y, p_match_direct), roc_auc_score(y, p_match_two_stage)],
+    'pr_auc': [average_precision_score(y, p_match_direct), average_precision_score(y, p_match_two_stage)],
+    'brier': [brier_score_loss(y, p_match_direct), brier_score_loss(y, p_match_two_stage)],
+}).set_index('approach')
+comparison.round(4)
+
