@@ -734,25 +734,25 @@ display(false_neg[display_cols].head(5))
 # Takeaway: The biggest false positives are dates where every observable signal looked strong (high mutual attractiveness, high shared interests, small age gap) and yet one side still said no — a reminder that plenty of what drives a real decision is simply not captured by these columns (tone of voice, a single off-hand comment, unmeasured chemistry). The false negatives are the mirror image: modest scores across the board that still resulted in a mutual yes. Both patterns point to the same honest limitation: this feature set explains a meaningful share of match likelihood, not all of it — exactly what an ROC-AUC of ~0.70 (well above chance, well below deterministic) should lead us to expect.
 
 
-# fig, axes = plt.subplots(1, 2, figsize=(13, 5))
+fig, axes = plt.subplots(1, 2, figsize=(13, 5))
 
-# for ax, subgroup_col, title in zip(axes, ['same_race', 'same_field'],
-#                                      ['Calibration by Same-Race Status', 'Calibration by Same-Field Status']):
-#     for val, label, color in [(0, 'Different', PALETTE[0]), (1, 'Same', PALETTE[1])]:
-#         mask = val_df[subgroup_col] == val
-#         if mask.sum() < 30:
-#             continue
-#         frac_pos, mean_pred = calibration_curve(val_df.loc[mask, 'actual_match'],
-#                                                   val_df.loc[mask, 'predicted_proba'], n_bins=5, strategy='quantile')
-#         ax.plot(mean_pred, frac_pos, marker='o', label=f"{label} (n={mask.sum()})", color=color)
-#     ax.plot([0, 1], [0, 1], ls='--', color='gray')
-#     ax.set_title(title)
-#     ax.set_xlabel("Mean predicted probability")
-#     ax.set_ylabel("Observed match rate")
-#     ax.legend(fontsize=9)
+for ax, subgroup_col, title in zip(axes, ['same_race', 'same_field'],
+                                     ['Calibration by Same-Race Status', 'Calibration by Same-Field Status']):
+    for val, label, color in [(0, 'Different', PALETTE[0]), (1, 'Same', PALETTE[1])]:
+        mask = val_df[subgroup_col] == val
+        if mask.sum() < 30:
+            continue
+        frac_pos, mean_pred = calibration_curve(val_df.loc[mask, 'actual_match'],
+                                                  val_df.loc[mask, 'predicted_proba'], n_bins=5, strategy='quantile')
+        ax.plot(mean_pred, frac_pos, marker='o', label=f"{label} (n={mask.sum()})", color=color)
+    ax.plot([0, 1], [0, 1], ls='--', color='gray')
+    ax.set_title(title)
+    ax.set_xlabel("Mean predicted probability")
+    ax.set_ylabel("Observed match rate")
+    ax.legend(fontsize=9)
 
-# plt.tight_layout()
-# plt.show()
+plt.tight_layout()
+plt.show()
 
 
 
