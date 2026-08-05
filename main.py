@@ -774,23 +774,23 @@ plt.show()
 # Best model summary
 
 
-# final_summary = pd.DataFrame({
-#     'Metric': ['ROC-AUC (5-fold grouped CV)', 'PR-AUC (5-fold grouped CV)', 'Brier score (grouped OOF)'],
-#     'Direct match model (LogReg)': [
-#         f"{results_df.loc['Logistic Regression', 'roc_auc_mean']:.3f}",
-#         f"{results_df.loc['Logistic Regression', 'pr_auc_mean']:.3f}",
-#         f"{brier_score_loss(y, p_match_direct):.3f}"
-#     ],
-#     'Direct match model (XGBoost, tuned)': [
-#         f"{search.best_score_:.3f}",
-#         f"{results_df.loc['XGBoost', 'pr_auc_mean']:.3f}",
-#         f"{results_df.loc['XGBoost', 'brier_mean']:.3f}"
-#     ],
-#     'Two-stage decision model': [
-#         f"{roc_auc_score(y, p_match_two_stage):.3f}",
-#         f"{average_precision_score(y, p_match_two_stage):.3f}",
-#         f"{brier_score_loss(y, p_match_two_stage):.3f}"
-#     ],
-# }).set_index('Metric')
-# final_summary
+final_summary = pd.DataFrame({
+    'Metric': ['ROC-AUC (5-fold grouped CV)', 'PR-AUC (5-fold grouped CV)', 'Brier score (grouped OOF)'],
+    'Direct match model (LogReg)': [
+        f"{results_df.loc['Logistic Regression', 'roc_auc_mean']:.3f}",
+        f"{results_df.loc['Logistic Regression', 'pr_auc_mean']:.3f}",
+        f"{brier_score_loss(y, p_match_direct):.3f}"
+    ],
+    'Direct match model (XGBoost, tuned)': [
+        f"{search.best_score_:.3f}",
+        f"{results_df.loc['XGBoost', 'pr_auc_mean']:.3f}",
+        f"{results_df.loc['XGBoost', 'brier_mean']:.3f}"
+    ],
+    'Two-stage decision model': [
+        f"{roc_auc_score(y, p_match_two_stage):.3f}",
+        f"{average_precision_score(y, p_match_two_stage):.3f}",
+        f"{brier_score_loss(y, p_match_two_stage):.3f}"
+    ],
+}).set_index('Metric')
+final_summary
 
